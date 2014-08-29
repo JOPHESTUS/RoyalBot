@@ -34,37 +34,37 @@ final class BaseListeners extends ListenerAdapter<PircBotX> {
 
     private final RoyalBot rb;
 
-    BaseListeners(RoyalBot instance) {
+    BaseListeners(final RoyalBot instance) {
         rb = instance;
     }
 
     @Override
-    public void onEvent(Event<PircBotX> event) {
+    public void onEvent(final Event<PircBotX> event) {
         try {
             super.onEvent(event);
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
             ex.printStackTrace();
         }
-        for (IRCListener il : rb.getListenerHandler().getAll()) {
+        for (final IRCListener il : rb.getListenerHandler().getAll()) {
             if (event instanceof GenericChannelEvent) {
-                GenericChannelEvent gce = (GenericChannelEvent) event;
-                ChannelPreferences cp = new ChannelPreferences(gce.getChannel().getName());
+                final GenericChannelEvent gce = (GenericChannelEvent) event;
+                final ChannelPreferences cp = new ChannelPreferences(gce.getChannel().getName());
                 if (cp.getDisabledListeners().contains(il.getName())) continue;
             }
             if (event instanceof GenericUserEvent) {
-                GenericUserEvent gue = (GenericUserEvent) event;
+                final GenericUserEvent gue = (GenericUserEvent) event;
                 if (BotUtils.isIgnored(BotUtils.generateHostmask(gue.getUser()))) continue;
             }
             if (event instanceof GenericChannelUserEvent) {
-                GenericChannelUserEvent gcue = (GenericChannelUserEvent) event;
-                ChannelPreferences cp = new ChannelPreferences(gcue.getChannel().getName());
+                final GenericChannelUserEvent gcue = (GenericChannelUserEvent) event;
+                final ChannelPreferences cp = new ChannelPreferences(gcue.getChannel().getName());
                 if (BotUtils.isIgnored(BotUtils.generateHostmask(gcue.getUser()), cp.getIgnores())) continue;
             }
-            for (Method m : il.getClass().getDeclaredMethods()) {
+            for (final Method m : il.getClass().getDeclaredMethods()) {
                 if (m.getAnnotation(Listener.class) == null) continue;
-                Class<?>[] params = m.getParameterTypes();
+                final Class<?>[] params = m.getParameterTypes();
                 if (params.length != 1) continue;
-                Class clazz = params[0];
+                final Class clazz = params[0];
                 if (!Event.class.isAssignableFrom(clazz)) continue;
                 if (event.getClass() != clazz) continue;
                 try {
@@ -77,24 +77,31 @@ final class BaseListeners extends ListenerAdapter<PircBotX> {
     }
 
     @Override
-    public void onConnect(ConnectEvent e) {
+    public void onGenericChannel(final GenericChannelEvent<PircBotX> e) {
+        if (e.getChannel().getUsers().size() <= 1) {
+            e.getChannel().send().part("Alone.");
+        }
+    }
+
+    @Override
+    public void onConnect(final ConnectEvent<PircBotX> e) {
         rb.getLogger().info("Connected!");
         rb.getPluginLoader().enablePlugins();
     }
 
     @Override
-    public void onDisconnect(DisconnectEvent e) {
+    public void onDisconnect(final DisconnectEvent<PircBotX> e) {
         rb.getPluginLoader().disablePlugins();
     }
 
     @Override
-    public void onInvite(InviteEvent e) {
+    public void onInvite(final InviteEvent<PircBotX> e) {
         e.getBot().sendIRC().joinChannel(e.getChannel());
         rb.getLogger().info("Invited to " + e.getChannel() + " by " + e.getUser() + ".");
     }
 
     @Override
-    public void onJoin(JoinEvent e) {
+    public void onJoin(final JoinEvent<PircBotX> e) {
         if (!e.getUser().getNick().equals(rb.getBot().getUserBot().getNick())) return;
         List<String> channels = rb.getConfig().getChannels();
         if (channels.contains(e.getChannel().getName())) return;
@@ -104,7 +111,7 @@ final class BaseListeners extends ListenerAdapter<PircBotX> {
     }
 
     @Override
-    public void onPart(PartEvent e) {
+    public void onPart(final PartEvent<PircBotX> e) {
         if (!e.getUser().getNick().equals(rb.getBot().getUserBot().getNick())) return;
         List<String> channels = rb.getConfig().getChannels();
         if (channels.contains(e.getChannel().getName())) channels.remove(e.getChannel().getName());
@@ -113,7 +120,7 @@ final class BaseListeners extends ListenerAdapter<PircBotX> {
     }
 
     @Override
-    public void onKick(KickEvent e) {
+    public void onKick(final KickEvent<PircBotX> e) {
         if (!e.getUser().getNick().equals(rb.getBot().getUserBot().getNick())) return;
         List<String> channels = rb.getConfig().getChannels();
         if (channels.contains(e.getChannel().getName())) channels.remove(e.getChannel().getName());
@@ -122,7 +129,7 @@ final class BaseListeners extends ListenerAdapter<PircBotX> {
     }
 
     @Override
-    public void onGenericMessage(GenericMessageEvent e) {
+    public void onGenericMessage(final GenericMessageEvent<PircBotX> e) {
         if (BotUtils.isIgnored(BotUtils.generateHostmask(e.getUser()))) return;
         if (!(e instanceof MessageEvent) && !(e instanceof PrivateMessageEvent)) return;
         final boolean isPrivateMessage = e instanceof PrivateMessageEvent;
