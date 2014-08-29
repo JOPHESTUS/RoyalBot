@@ -1,6 +1,7 @@
 package org.royaldev.royalbot;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.pircbotx.Channel;
 import org.pircbotx.PircBotX;
 import org.pircbotx.hooks.Event;
 import org.pircbotx.hooks.ListenerAdapter;
@@ -36,6 +37,10 @@ final class BaseListeners extends ListenerAdapter<PircBotX> {
 
     BaseListeners(final RoyalBot instance) {
         rb = instance;
+    }
+
+    private void partIfLessThan(final Channel c, final int amount) {
+        if (c.getUsers().size() < amount) c.send().part("Alone.");
     }
 
     @Override
@@ -77,13 +82,6 @@ final class BaseListeners extends ListenerAdapter<PircBotX> {
     }
 
     @Override
-    public void onGenericChannel(final GenericChannelEvent<PircBotX> e) {
-        if (e.getChannel().getUsers().size() <= 1) {
-            e.getChannel().send().part("Alone.");
-        }
-    }
-
-    @Override
     public void onConnect(final ConnectEvent<PircBotX> e) {
         rb.getLogger().info("Connected!");
         rb.getPluginLoader().enablePlugins();
@@ -102,6 +100,7 @@ final class BaseListeners extends ListenerAdapter<PircBotX> {
 
     @Override
     public void onJoin(final JoinEvent<PircBotX> e) {
+        this.partIfLessThan(e.getChannel(), 1);
         if (!e.getUser().getNick().equals(rb.getBot().getUserBot().getNick())) return;
         List<String> channels = rb.getConfig().getChannels();
         if (channels.contains(e.getChannel().getName())) return;
@@ -111,21 +110,25 @@ final class BaseListeners extends ListenerAdapter<PircBotX> {
     }
 
     @Override
+    public void onKick(final KickEvent<PircBotX> e) {
+        if (!e.getUser().getNick().equals(rb.getBot().getUserBot().getNick())) {
+            this.partIfLessThan(e.getChannel(), 2);
+            return;
+        }
+        List<String> channels = rb.getConfig().getChannels();
+        if (channels.contains(e.getChannel().getName())) channels.remove(e.getChannel().getName());
+        rb.getConfig().setChannels(channels);
+        rb.getLogger().info("Kicked from " + e.getChannel().getName() + ".");
+    }
+
+    @Override
     public void onPart(final PartEvent<PircBotX> e) {
+        if (e.getDaoSnapshot().getUsers(e.getChannel()).size() <= 2) e.getChannel().send().part("Alone.");
         if (!e.getUser().getNick().equals(rb.getBot().getUserBot().getNick())) return;
         List<String> channels = rb.getConfig().getChannels();
         if (channels.contains(e.getChannel().getName())) channels.remove(e.getChannel().getName());
         rb.getConfig().setChannels(channels);
         rb.getLogger().info("Parted from " + e.getChannel().getName() + ".");
-    }
-
-    @Override
-    public void onKick(final KickEvent<PircBotX> e) {
-        if (!e.getUser().getNick().equals(rb.getBot().getUserBot().getNick())) return;
-        List<String> channels = rb.getConfig().getChannels();
-        if (channels.contains(e.getChannel().getName())) channels.remove(e.getChannel().getName());
-        rb.getConfig().setChannels(channels);
-        rb.getLogger().info("Kicked from " + e.getChannel().getName() + ".");
     }
 
     @Override
