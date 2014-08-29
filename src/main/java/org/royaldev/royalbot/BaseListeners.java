@@ -100,7 +100,7 @@ final class BaseListeners extends ListenerAdapter<PircBotX> {
 
     @Override
     public void onJoin(final JoinEvent<PircBotX> e) {
-        this.partIfLessThan(e.getChannel(), 1);
+        //this.partIfLessThan(e.getChannel(), 1);
         if (!e.getUser().getNick().equals(rb.getBot().getUserBot().getNick())) return;
         List<String> channels = rb.getConfig().getChannels();
         if (channels.contains(e.getChannel().getName())) return;
